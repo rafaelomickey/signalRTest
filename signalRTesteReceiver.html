@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <title>SignalTestReceiver</title>	
+        <script src="/signalr/Scripts/jquery-1.6.4.js"></script>
+        <script src="/signalr/Scripts/jquery.signalR-2.2.2.js"></script>
+		<script src="/signalr/Scripts/jquery.signalR.js"></script>
+		<script type="text/javascript" src="http://yourHubUrl.com/signalr/hubs"></script>
+
+    </head>
+    <body>	
+			<!--ToDo: try dynamic url -->
+			<input type="hidden" value="https://yourHubUrl.com/signalr/hubs" />	
+			<input type="text" id="url" size="60" readonly="readonly" value="http://yourHubUrl.com/signalr/hubs"/>
+			
+			
+			<script type="text/javascript">
+				const usuario = {
+					Token: 'YWRkZWJlM2ItMjBkMi00YzQ1LTg3ZDctODAwZThkNWU2MzU1',
+					Login: 'rafaelbuca'
+				};
+				
+				const hubUrlBase = $("#url").val();				
+				
+				$.connection.hub.url = hubUrlBase;
+				$.connection.hub.qs = { token: usuario.Token, login: usuario.Login };
+				$.connection.hub.start().done();
+				
+				var hubProxy = $.connection.YourHubName;
+				hubProxy.client.sendNotification = function (response) { //sendNotification is a method name that your hub method call on send notification he needs same name
+					alert(response);
+				};
+			</script>
+    </body>
+</html>
+				

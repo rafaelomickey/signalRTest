@@ -1,0 +1,150 @@
+<html>
+    <head>
+        <title>Signal Test Caller</title>	
+        <script src="/signalr/Scripts/jquery-1.6.4.js"></script>
+        <script src="/signalr/Scripts/jquery.signalR-2.2.2.js"></script>
+		<script src="/signalr/Scripts/jquery.signalR.js"></script>
+		<!--ToDo: try dynamic url -->
+		<script type="text/javascript" src="https://yourHubUrl.com/signalr/hubs"></script>
+    </head>
+    <body>
+        <h1>Signal Test Caller</h1>
+        <h3>Server</h3>
+        <table>
+            <tr>
+                <td>Url:</td>		
+				<!--ToDo: try dynamic url -->				
+                <td><input type="text" id="url" size="60" value="https://yourHubUrl.com/signalr/hubs"/></td>
+            </tr>
+        </table>
+        <input type="button" id="connect" value="Connect"/>        
+        <hr>
+        <h3>Hub</h3>
+        <form id="invokeForm">
+            <table>
+                <tr>
+                    <td>Hub:</td>
+                    <td><select disabled id="hubname" name="hub"/></td>
+                </tr>
+                <tbody>
+                    <tr>
+                        <td>Method Name</td>
+                        <td><select disabled id="methodname" name="method" /></td>
+                    </tr>
+                </tbody>
+                <tr>
+                    <td><h4>Arguments </h4></td>
+                    <td><a href="#" onclick=" javascript:addArgument(); " id="addArgument">Add...</a></td>
+                </tr>
+                <tbody id="arguments">
+                </tbody>
+            </table>
+            <input type="button" id="sendInvocation" disabled value="Send"/>
+        </form>
+        <hr>
+        <h3>Response</h3>
+        <pre id="response">
+        </pre>
+		
+		<script type="text/javascript">
+            window.signaltest = { connected: false, hub: null, argumentCount: 0 };
+
+            $(function() {
+                $('#connect').click(function() {
+                    $('#connect').prop('value', 'Connecting...');
+
+                    $.getScript($("#url").val() + '/hubs', function() {
+
+                        $('#url').prop('disabled', true);
+                        $('#hubname').prop('disabled', true);
+                        $('#connect').prop('disabled', true);
+
+                        $.connection.hub.url = $("#url").val();
+                        $.connection.hub.start({ jsonp: true }).done(function() {
+                            $('#connect').prop('value', 'Connected!');
+
+                            $("#methodname").prop('disabled', false);
+                            $(".argumentInputBox").prop('disabled', false);
+                            $("#sendInvocation").prop('disabled', false);
+                            $("#hubname").prop('disabled', false);
+
+                            var count = 0;
+                            for (var h in $.connection) {
+                                console.log(h);
+                                count++;
+                                if (count > 10)
+                                    $("#hubname").append($('<option>', {
+                                        value: h,
+                                        text: h
+                                    }));
+                            }
+
+                            fillMethods();
+                        });
+                    });
+                });
+
+                var fillMethods = function() {
+                    $("#methodname").html('');
+                    var hub = $("#hubname").val();
+                    window.signaltest.hub = $.connection[hub];
+                    for (var m in window.signaltest.hub.server) {
+                        console.log(m);
+                        $("#methodname").append($('<option>', {
+                            value: m,
+                            'data-arg-num': m.length,
+                            text: m
+                        }));
+                    }
+                };
+
+                $("#hubname").change(function() { fillMethods(); });
+				
+                $('#connect').focus();
+				
+                $("#sendInvocation").click(function() {
+                    $("#sendInvocation").prop('disabled', true);
+                    $('#sendInvocation').prop('value', 'Sending...');
+                    var methodName = $('#methodname').val();
+
+                    var args = [];
+                    $('#arguments input').each(function() {
+                        var type = $(this).attr("type");
+                        if (type == "text")
+                            args.push($(this).val());
+                    });
+
+                    console.log(args);
+                    window.signaltest.hub.server[methodName].apply(this, args).done(function(result) {
+                        $("#sendInvocation").prop('disabled', false);
+                        $('#sendInvocation').prop('value', 'Send');
+
+                        console.log('Invocation of "' + methodName + '" succeeded');
+                        console.log(result);
+
+                        $("#response").text(JSON.stringify(result, null, 4));
+
+                    }).fail(function(error) {
+                        $("#sendInvocation").prop('disabled', false);
+                        $('#sendInvocation').prop('value', 'Send');
+                        console.log(error);
+                        $("#response").html('<span style="color:red">Invocation of "' + methodName + '" failed. Error: ' + error + '</span>');
+                    });
+                });
+            });
+
+            addArgument = function() {
+                window.signaltest.argumentCount++;
+                $("#arguments").append(
+                    '<tr id="argumentRow'
+                        + window.signaltest.argumentCount + '"><td>Argument:</td><td><input type="text" name="key'
+                        + window.signaltest.argumentCount + '" class="argumentInputBox"/></td><td><input type="button" value="Delete" onclick=" deleteArgument('
+                        + window.signaltest.argumentCount + ') "/></td></tr>');
+            };
+			
+            deleteArgument = function(count) {
+                $("#argumentRow" + count).remove();
+            };			
+        </script>
+    </body>
+</html>
